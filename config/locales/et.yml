@@ -1,7 +1,7 @@
 ---
 et:
   about:
-    about_mastodon_html: 'Tuleviku sotsiaalvõrgustik: Reklaamivaba, korporatiivse järelvalveta, eetiline kujundus ning detsentraliseeritus! Mastodonis omad sa enda andmeid ka päriselt!'
+    about_mastodon_html: 'Tuleviku sotsiaalvõrgustik: Reklaamivaba, korporatiivse jälitamiseta, eetiline kujundus ning hajutatus! Mastodonis omad sa enda andmeid ka päriselt!'
     contact_missing: Määramata
     contact_unavailable: Pole saadaval
     hosted_on: Mastodoni teenus serveris %{domain}
@@ -12,11 +12,13 @@ et:
     followers:
       one: Jälgija
       other: Jälgijaid
-    following: Jälgib
+    following:
+      one: Jälgib
+      other: Jälgib
     instance_actor_flash: See on serveri enda virtuaalne konto. See ei esinda ühtegi kindlat kasutajat, vaid seda kasutatakse födereerumisel. Seda kontot ei tohi kustutada.
     last_active: viimati aktiivne
     link_verified_on: Selle lingi autorsust kontrolliti %{date}
-    nothing_here: Siin pole midagi!
+    nothing_here: Siin pole mitte midagi!
     pin_errors:
       following: Pead olema juba selle kasutaja jälgija, keda soovitad
     posts:
@@ -711,7 +713,6 @@ et:
       resolved_msg: Teavituse lahendamine õnnestus!
       skip_to_actions: Otsuste juurde
       status: Olek
-      statuses: Raporteeritud sisu
       statuses_description_html: Sobimatu sisu kaasatakse suhtlusse raporteeritud kontoga
       summary:
         action_preambles:
@@ -800,6 +801,7 @@ et:
         view_devops_description: Lubab kasutajail ligipääsu Sidekiq ja pgHero töölaudadele
         view_feeds: Vaata postituste ja teemade voogu reaalajas
         view_feeds_description: Sõltumata serveri seadistustest luba kasutajatel vaadata postituste ja teemade voogu reaalajas
+      requires_2fa: Eeldab kaheastmelise autentimise kasutamist
       title: Rollid
     rules:
       add_new: Lisa reegel
@@ -1091,7 +1093,7 @@ et:
           tag_servers_dimension: Populaarseimad serverid
           tag_servers_measure: erinevat serverit
           tag_uses_measure: kasutajaid kokku
-        description_html: Need teemaviited ilmuvad praegu paljudes postitutes, mida su server näeb. See võib aidata su kasutajatel leida seda millest kõige rohkem parajasti räägitakse. Ühtegi teemaviidet ei näidata enne nende heaks kiitmist avalikult.
+        description_html: Need teemaviited ilmuvad praegu paljudes postitustes, mida su server näeb. Need võivad aidata su kasutajatel leida seda, millest hetkel kõige rohkem räägitakse. Ühtegi teemaviidet ei näidata enne heaks kiitmist avalikult.
         listable: Võib olla soovitatud
         no_tag_selected: Silte ei muudetud, kuna ühtegi polnud valitud
         not_listable: Ei soovitata
@@ -1212,7 +1214,6 @@ et:
   application_mailer:
     notification_preferences: Muuda e-posti eelistusi
     salutation: "%{name}!"
-    settings: 'Muuda e-posti eelistusi: %{link}'
     unsubscribe: Loobu tellimisest
     view: 'Vaade:'
     view_profile: Vaata profiili
@@ -1395,8 +1396,6 @@ et:
       your_appeal_pending: Vaidlustus on esitatud
       your_appeal_rejected: Vaidlustus on tagasi lükatud
   edit_profile:
-    basic_information: Põhiinfo
-    hint_html: "<strong>Kohanda, mida inimesed näevad su avalikul profiilil ja postituste kõrval.</strong> Inimesed alustavad tõenäolisemalt sinu jälgimist ja interakteeruvad sinuga, kui sul on täidetud profiil ja profiilipilt."
     other: Muu
   emoji_styles:
     auto: Automaatne
@@ -1436,10 +1435,8 @@ et:
     mutes: Oled summutanud
     storage: Meedia hoidla
   featured_tags:
-    add_new: Lisa uus
     errors:
       limit: Oled jõudnud teemaviidete lubatud maksimumarvuni
-    hint_html: "<strong>Mis on esiletõstetud teemaviited?</strong> Neid teemaviiteid näidatakse su avalikul profiilil esiletõstetult ning need aitavad teistel leida postitusi, millel on selline teemaviide. See on hea viis, kuidas hoida järge loovtöödel või pikaajalistel projektidel."
   filters:
     contexts:
       account: Profiilid
@@ -1632,21 +1629,6 @@ et:
     failed_sign_in_html: Nurjunud sisenemine meetodiga %{method} aadressilt %{ip} (%{browser})
     successful_sign_in_html: Edukas sisenemine meetodiga %{method} aadressilt %{ip} (%{browser})
     title: Autentimise ajalugu
-  mail_subscriptions:
-    unsubscribe:
-      action: Jah, lõpeta tellimine
-      complete: Tellimine lõpetatud
-      confirmation_html: Kas oled kindel, et soovid loobuda %{type} tellimisest oma e-postiaadressile %{email} Mastodonist kohas %{domain}? Saad alati uuesti tellida oma <a href="%{settings_path}">e-posti teavituste seadetest</a>.
-      emails:
-        notification_emails:
-          favourite: lemmikuks märkimise teavituskirjade
-          follow: jälgimiste teavituskirjade
-          follow_request: jälgimistaotluste teavituskirjade
-          mention: mainimiste teavituskirjade
-          reblog: jagamiste teavituskirjade
-      resubscribe_html: Kui loobusid tellimisest ekslikult, saad uuesti tellida oma <a href="%{settings_path}">e-posti teavituste seadetest</a>.
-      success_html: Sa ei saa enam %{type} teateid oma e-postile %{email} Mastodonist kohas %{domain}.
-      title: Loobu tellimisest
   media_attachments:
     validations:
       images_and_video: Ei saa lisada video postitusele, milles on juba pildid
@@ -1797,7 +1779,7 @@ et:
   reactions:
     errors:
       limit_reached: Jõutud on erinevate reaktsioonide limiidini
-      unrecognized_emoji: ei ole tuntud emotikoon
+      unrecognized_emoji: ei ole tuntud emoji
   redirects:
     prompt: Kui te usaldate seda linki, klõpsake sellele, et jätkata.
     title: Te lahkute %{instance}.
@@ -2021,10 +2003,7 @@ et:
     review_link: Vaata üle kasutustingimused
     title: "%{domain} saidi kasutustingimused muutuvad"
   themes:
-    contrast: Mastodon (Kõrge kontrast)
-    default: Mastodon (Tume)
-    mastodon-light: Mastodon (Hele)
-    system: Automaatne (kasuta süsteemi teemat)
+    default: Mastodon
   time:
     formats:
       default: "%d. %B, %Y. aastal, kell %H:%M"
@@ -2049,6 +2028,8 @@ et:
     recovery_codes: Taastekoodide varundamine
     recovery_codes_regenerated: Taastekoodid edukalt taasloodud
     recovery_instructions_html: Kui telefon peaks kaotsi minema, on võimalik kontole sisenemisel kasutada ühte järgnevatest taastekoodidest. <strong>Hoia taastekoode turvaliselt</strong>. Näiteks võib neid prindituna hoida koos teiste tähtsate dokumentidega.
+    resume_app_authorization: Jätka rakenduse autentimist
+    role_requirement: "%{domain} teenus eeldab, et Mastodoni kasutamiseks lülitad sisse kaheastmelise autentimise."
     webauthn: Turvavõtmed
   user_mailer:
     announcement_published:

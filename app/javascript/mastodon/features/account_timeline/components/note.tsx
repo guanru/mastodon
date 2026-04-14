@@ -10,7 +10,7 @@ import { IconButton } from '@/mastodon/components/icon_button';
 import { useAppDispatch, useAppSelector } from '@/mastodon/store';
 import EditIcon from '@/material-icons/400-24px/edit_square.svg?react';
 
-import classes from './redesign.module.scss';
+import classes from './styles.module.scss';
 
 const messages = defineMessages({
   title: {
@@ -63,7 +63,7 @@ export const AccountNote: FC<{ accountId: string }> = ({ accountId }) => {
         />
       }
     >
-      {relationship.note}
+      <div className={classes.noteContent}>{relationship.note}</div>
     </Callout>
   );
 };

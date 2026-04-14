@@ -9,12 +9,11 @@ import { useParams } from 'react-router';
 import { fetchFeaturedTags } from '@/mastodon/actions/featured_tags';
 import { useAppHistory } from '@/mastodon/components/router';
 import { Tag } from '@/mastodon/components/tags/tag';
-import { useOverflow } from '@/mastodon/hooks/useOverflow';
+import { useOverflowButton } from '@/mastodon/hooks/useOverflow';
 import { selectAccountFeaturedTags } from '@/mastodon/selectors/accounts';
 import { useAppDispatch, useAppSelector } from '@/mastodon/store';
 
-import { useFilters } from '../hooks/useFilters';
-
+import { useAccountContext } from './context';
 import classes from './styles.module.scss';
 
 export const FeaturedTags: FC<{ accountId: string }> = ({ accountId }) => {
@@ -30,7 +29,7 @@ export const FeaturedTags: FC<{ accountId: string }> = ({ accountId }) => {
   // Get list of tags with overflow handling.
   const [showOverflow, setShowOverflow] = useState(false);
   const { hiddenCount, wrapperRef, listRef, hiddenIndex, maxWidth } =
-    useOverflow();
+    useOverflowButton();
 
   // Handle whether to show all tags.
   const handleOverflowClick: MouseEventHandler = useCallback(() => {
@@ -83,7 +82,7 @@ export const FeaturedTags: FC<{ accountId: string }> = ({ accountId }) => {
 function useTagNavigate() {
   // Get current account, tag, and filters.
   const { acct, tagged } = useParams<{ acct: string; tagged?: string }>();
-  const { boosts, replies } = useFilters();
+  const { boosts, replies } = useAccountContext();
 
   const history = useAppHistory();
 

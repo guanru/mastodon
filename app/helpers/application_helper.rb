@@ -34,11 +34,11 @@ module ApplicationHelper
     Setting.registrations_mode == 'none'
   end
 
-  def available_sign_up_path
+  def available_sign_up_url
     if closed_registrations? || omniauth_only?
-      'https://joinmastodon.org/#getting-started'
+      'https://joinmastodon.org/'
     else
-      ENV.fetch('SSO_ACCOUNT_SIGN_UP', new_user_registration_path)
+      ENV.fetch('SSO_ACCOUNT_SIGN_UP', new_user_registration_url)
     end
   end
 
@@ -87,12 +87,6 @@ module ApplicationHelper
 
   def title
     Rails.env.production? ? site_title : "#{site_title} (Dev)"
-  end
-
-  def page_color_scheme
-    return content_for(:force_color_scheme) if content_for(:force_color_scheme)
-
-    color_scheme
   end
 
   def label_for_scope(scope)

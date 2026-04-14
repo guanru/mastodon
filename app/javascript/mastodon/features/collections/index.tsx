@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect } from 'react';
 
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl';
 
@@ -6,99 +6,60 @@ import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 
 import AddIcon from '@/material-icons/400-24px/add.svg?react';
-import ListAltIcon from '@/material-icons/400-24px/list_alt.svg?react';
-import MoreHorizIcon from '@/material-icons/400-24px/more_horiz.svg?react';
+import CollectionsFilledIcon from '@/material-icons/400-24px/category-fill.svg?react';
 import SquigglyArrow from '@/svg-icons/squiggly_arrow.svg?react';
-import { openModal } from 'mastodon/actions/modal';
 import { Column } from 'mastodon/components/column';
 import { ColumnHeader } from 'mastodon/components/column_header';
-import { Dropdown } from 'mastodon/components/dropdown_menu';
+import { DisplayNameSimple } from 'mastodon/components/display_name/simple';
 import { Icon } from 'mastodon/components/icon';
-import ScrollableList from 'mastodon/components/scrollable_list';
+import {
+  ItemList,
+  Scrollable,
+} from 'mastodon/components/scrollable_list/components';
+import { useAccount } from 'mastodon/hooks/useAccount';
+import { useAccountId, useCurrentAccountId } from 'mastodon/hooks/useAccountId';
 import {
   fetchAccountCollections,
-  selectMyCollections,
+  selectAccountCollections,
 } from 'mastodon/reducers/slices/collections';
 import { useAppSelector, useAppDispatch } from 'mastodon/store';
 
+import { CollectionListItem } from './components/collection_list_item';
+import { messages as editorMessages } from './editor';
+
 const messages = defineMessages({
-  heading: { id: 'column.collections', defaultMessage: 'My collections' },
-  create: {
-    id: 'collections.create_collection',
-    defaultMessage: 'Create collection',
+  headingMe: { id: 'column.my_collections', defaultMessage: 'My collections' },
+  headingOther: {
+    id: 'column.other_collections',
+    defaultMessage: 'Collections by {name}',
   },
-  view: {
-    id: 'collections.view_collection',
-    defaultMessage: 'View collection',
-  },
-  delete: {
-    id: 'collections.delete_collection',
-    defaultMessage: 'Delete collection',
-  },
-  more: { id: 'status.more', defaultMessage: 'More' },
 });
-
-const ListItem: React.FC<{
-  id: string;
-  name: string;
-}> = ({ id, name }) => {
-  const dispatch = useAppDispatch();
-  const intl = useIntl();
-
-  const handleDeleteClick = useCallback(() => {
-    dispatch(
-      openModal({
-        modalType: 'CONFIRM_DELETE_COLLECTION',
-        modalProps: {
-          name,
-          id,
-        },
-      }),
-    );
-  }, [dispatch, id, name]);
-
-  const menu = useMemo(
-    () => [
-      { text: intl.formatMessage(messages.view), to: `/collections/${id}` },
-      { text: intl.formatMessage(messages.delete), action: handleDeleteClick },
-    ],
-    [intl, id, handleDeleteClick],
-  );
-
-  return (
-    <div className='lists__item'>
-      <Link to={`/collections/${id}/edit`} className='lists__item__title'>
-        <span>{name}</span>
-      </Link>
-
-      <Dropdown
-        scrollKey='collections'
-        items={menu}
-        icon='ellipsis-h'
-        iconComponent={MoreHorizIcon}
-        title={intl.formatMessage(messages.more)}
-      />
-    </div>
-  );
-};
 
 export const Collections: React.FC<{
   multiColumn?: boolean;
 }> = ({ multiColumn }) => {
   const dispatch = useAppDispatch();
   const intl = useIntl();
-  const me = useAppSelector((state) => state.meta.get('me') as string);
-  const { collections, status } = useAppSelector(selectMyCollections);
+  const me = useCurrentAccountId();
+  const accountId = useAccountId();
+  const account = useAccount(accountId);
+
+  const { collections, status } = useAppSelector((state) =>
+    selectAccountCollections(state, accountId),
+  );
 
   useEffect(() => {
-    void dispatch(fetchAccountCollections({ accountId: me }));
-  }, [dispatch, me]);
+    if (accountId) {
+      void dispatch(fetchAccountCollections({ accountId }));
+    }
+  }, [dispatch, accountId]);
 
   const emptyMessage =
-    status === 'error' ? (
+    status === 'error' || !accountId ? (
       <FormattedMessage
         id='collections.error_loading_collections'
         defaultMessage='There was an error when trying to load your collections.'
+        tagName='span'
       />
     ) : (
       <>
@@ -118,41 +79,56 @@ export const Collections: React.FC<{
       </>
     );
 
+  const isOwnCollection = accountId === me;
+  const titleMessage = isOwnCollection
+    ? messages.headingMe
+    : messages.headingOther;
+
+  const pageTitle = intl.formatMessage(titleMessage, {
+    name: account?.get('display_name'),
+  });
+  const pageTitleHtml = intl.formatMessage(titleMessage, {
+    name: <DisplayNameSimple account={account} />,
+  });
+
   return (
-    <Column
-      bindToDocument={!multiColumn}
-      label={intl.formatMessage(messages.heading)}
-    >
+    <Column bindToDocument={!multiColumn} label={pageTitle}>
       <ColumnHeader
-        title={intl.formatMessage(messages.heading)}
-        icon='list-ul'
-        iconComponent={ListAltIcon}
+        title={pageTitleHtml}
+        icon='collections'
+        iconComponent={CollectionsFilledIcon}
         multiColumn={multiColumn}
         extraButton={
-          <Link
-            to='/collections/new'
-            className='column-header__button'
-            title={intl.formatMessage(messages.create)}
-            aria-label={intl.formatMessage(messages.create)}
-          >
-            <Icon id='plus' icon={AddIcon} />
-          </Link>
+          isOwnCollection && (
+            <Link
+              to='/collections/new'
+              className='column-header__button'
+              title={intl.formatMessage(editorMessages.create)}
+              aria-label={intl.formatMessage(editorMessages.create)}
+            >
+              <Icon id='plus' icon={AddIcon} />
+            </Link>
+          )
         }
       />
 
-      <ScrollableList
-        scrollKey='collections'
-        emptyMessage={emptyMessage}
-        isLoading={status === 'loading'}
-        bindToDocument={!multiColumn}
-      >
-        {collections.map((item) => (
-          <ListItem key={item.id} id={item.id} name={item.name} />
-        ))}
-      </ScrollableList>
+      <Scrollable>
+        <ItemList emptyMessage={emptyMessage} isLoading={status === 'loading'}>
+          {collections.map((item, index) => (
+            <CollectionListItem
+              withTimestamp
+              withAuthorHandle={false}
+              key={item.id}
+              collection={item}
+              positionInList={index + 1}
+              listSize={collections.length}
+            />
+          ))}
+        </ItemList>
+      </Scrollable>
 
       <Helmet>
-        <title>{intl.formatMessage(messages.heading)}</title>
+        <title>{pageTitle}</title>
         <meta name='robots' content='noindex' />
       </Helmet>
     </Column>
