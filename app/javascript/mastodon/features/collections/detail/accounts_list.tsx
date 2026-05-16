@@ -2,15 +2,12 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
 
-import {
-  ListItemButton,
-  ListItemWrapper,
-} from '@/mastodon/components/list_item';
-import { createAppSelector, useAppSelector } from '@/mastodon/store';
-import KeyboardArrowDownIcon from '@/material-icons/400-24px/keyboard_arrow_down.svg?react';
-import KeyboardArrowUpIcon from '@/material-icons/400-24px/keyboard_arrow_up.svg?react';
+import { PendingBadge } from '@/mastodon/components/badge';
 import VisibilityOffIcon from '@/material-icons/400-24px/visibility_off.svg?react';
-import type { ApiCollectionJSON } from 'mastodon/api_types/collections';
+import type {
+  ApiCollectionJSON,
+  CollectionAccountItem,
+} from 'mastodon/api_types/collections';
 import type { RenderButtonOptions } from 'mastodon/components/account_list_item';
 import {
   AccountListItem,
@@ -18,13 +15,15 @@ import {
 } from 'mastodon/components/account_list_item';
 import { Button } from 'mastodon/components/button';
 import { Callout } from 'mastodon/components/callout';
-import { Icon } from 'mastodon/components/icon';
 import {
   Article,
   ItemList,
 } from 'mastodon/components/scrollable_list/components';
+import type { TruncatedListItemInfo } from 'mastodon/components/truncated_list';
+import { TruncatedListItems } from 'mastodon/components/truncated_list';
 import { me } from 'mastodon/initial_state';
 import type { Account } from 'mastodon/models/account';
+import { createAppSelector, useAppSelector } from 'mastodon/store';
 
 import { useConfirmRevoke } from './revoke_collection_inclusion_modal';
 import classes from './styles.module.scss';
@@ -80,51 +79,53 @@ const SensitiveScreen: React.FC<{
   );
 };
 
-const getCollectionAccounts = createAppSelector(
+type CollectionItemWithAccount = CollectionAccountItem & {
+  account?: Account | null;
+};
+
+const getCollectionItems = createAppSelector(
   [
     (state) => state.accounts,
     (state, collectionId?: string) =>
       state.collections.collections[collectionId ?? '']?.items,
   ],
   (accounts, collectionAccountItems) =>
-    (collectionAccountItems ?? []).map(({ account_id }) =>
-      account_id ? accounts.get(account_id) : null,
+    (collectionAccountItems ?? []).map(
+      (item): CollectionItemWithAccount => ({
+        ...item,
+        account: item.account_id ? accounts.get(item.account_id) : null,
+      }),
     ),
 );
 
 export const CollectionAccountsList: React.FC<{
-  collection?: ApiCollectionJSON;
-  isLoading: boolean;
-}> = ({ collection, isLoading }) => {
+  collection: ApiCollectionJSON;
+}> = ({ collection }) => {
   const intl = useIntl();
   const confirmRevoke = useConfirmRevoke(collection);
   const listHeadingRef = useRef<HTMLHeadingElement>(null);
-  const [canShowHiddenAccounts, setCanShowHiddenAccounts] = useState(false);
-  const toggleHiddenAccounts = useCallback(() => {
-    setCanShowHiddenAccounts((prev) => !prev);
-  }, []);
 
-  const isOwnCollection = collection?.account_id === me;
-  const { items = [], account_id: collectionOwnerId, id } = collection ?? {};
+  const isOwnCollection = collection.account_id === me;
+  const { account_id: collectionOwnerId, id } = collection;
 
   const relationships = useAppSelector((state) => state.relationships);
   const collectionAccounts = useAppSelector((state) =>
-    getCollectionAccounts(state, id),
+    getCollectionItems(state, id),
   );
 
   const { visibleAccounts, hiddenAccounts } = useMemo(() => {
-    const visibleAccounts: Account[] = [];
-    const hiddenAccounts: Account[] = [];
+    const visibleAccounts: CollectionItemWithAccount[] = [];
+    const hiddenAccounts: CollectionItemWithAccount[] = [];
 
     collectionAccounts.forEach((item) => {
-      if (!item) {
-        // We currently simply hide unavailable accounts, this includes
-        // accounts that are pending inclusion; at least for the collection
-        // owner we should display an indication of pending users
+      const { account, account_id } = item;
+
+      if (!isOwnCollection && !account) {
+        // Hide unavailable accounts unless you own this collection
         return;
       }
 
-      const relationship = relationships.get(item.id);
+      const relationship = account_id ? relationships.get(account_id) : null;
       if (relationship?.blocking || relationship?.muting) {
         hiddenAccounts.push(item);
       } else {
@@ -133,19 +134,20 @@ export const CollectionAccountsList: React.FC<{
     });
 
     return { visibleAccounts, hiddenAccounts };
-  }, [collectionAccounts, relationships]);
-
-  const hasHiddenAccounts = hiddenAccounts.length > 0;
-  const initialListSize = visibleAccounts.length + (hasHiddenAccounts ? 1 : 0);
+  }, [collectionAccounts, isOwnCollection, relationships]);
 
   const renderAccountItemButton = useCallback(
     ({ relationship, accountId }: RenderButtonOptions) => {
+      if (!me || !relationship) {
+        // Show follow button when logged out (it will trigger the remote interaction modal)
+        return <AccountListItemFollowButton accountId={accountId} />;
+      }
+
       // When viewing your own collection, only show the Follow button
       // for accounts you're not following anymore.
       const withoutButton =
-        !relationship ||
-        (collectionOwnerId === me &&
-          (relationship.following || relationship.requested));
+        collectionOwnerId === me &&
+        (relationship.following || relationship.requested);
 
       if (withoutButton) return null;
 
@@ -165,6 +167,29 @@ export const CollectionAccountsList: React.FC<{
     [collectionOwnerId, confirmRevoke],
   );
 
+  const renderListItem = useCallback(
+    ({
+      item,
+      index,
+      totalListLength,
+      isLastElement,
+    }: TruncatedListItemInfo<CollectionItemWithAccount>) => (
+      <Article
+        key={item.id}
+        aria-posinset={index + 1}
+        aria-setsize={totalListLength}
+      >
+        <AccountListItem
+          accountId={item.account_id}
+          withBorder={!isLastElement}
+          badge={item.state === 'pending' ? <PendingBadge /> : null}
+          renderButton={renderAccountItemButton}
+        />
+      </Article>
+    ),
+    [renderAccountItemButton],
+  );
+
   return (
     <>
       <h3
@@ -172,96 +197,41 @@ export const CollectionAccountsList: React.FC<{
         tabIndex={-1}
         ref={listHeadingRef}
       >
-        {collection ? (
-          <FormattedMessage
-            id='collections.account_count'
-            defaultMessage='{count, plural, one {# account} other {# accounts}}'
-            values={{ count: collection.item_count }}
-          />
-        ) : (
-          <FormattedMessage
-            id='collections.detail.accounts_heading'
-            defaultMessage='Accounts'
-          />
-        )}
+        <FormattedMessage
+          id='collections.account_count'
+          defaultMessage='{count, plural, one {# account} other {# accounts}}'
+          values={{ count: collection.item_count }}
+        />
       </h3>
-      {collection && (
-        <SensitiveScreen
-          sensitive={!isOwnCollection && collection.sensitive}
-          focusTargetRef={listHeadingRef}
-        >
-          <ItemList
-            isLoading={isLoading}
-            emptyMessage={intl.formatMessage(messages.empty)}
-          >
-            {visibleAccounts.map(({ id }, index) => (
-              <Article
-                key={id}
-                aria-posinset={index + 1}
-                aria-setsize={initialListSize}
-              >
-                <AccountListItem
-                  accountId={id}
-                  withBorder={index !== items.length - 1 || hasHiddenAccounts}
-                  renderButton={renderAccountItemButton}
+      <SensitiveScreen
+        sensitive={!isOwnCollection && collection.sensitive}
+        focusTargetRef={listHeadingRef}
+      >
+        <ItemList emptyMessage={intl.formatMessage(messages.empty)}>
+          <TruncatedListItems
+            visibleItems={visibleAccounts}
+            truncatedItems={hiddenAccounts}
+            toggleButton={{
+              icon: VisibilityOffIcon,
+              title: (
+                <FormattedMessage
+                  id='collections.hidden_accounts_link'
+                  defaultMessage='{count, plural, one {# hidden account} other {# hidden accounts}}'
+                  values={{ count: hiddenAccounts.length }}
                 />
-              </Article>
-            ))}
-            {hasHiddenAccounts && (
-              <Article
-                aria-posinset={initialListSize}
-                aria-setsize={initialListSize}
-              >
-                <ListItemWrapper
-                  icon={<Icon id='visibility-off' icon={VisibilityOffIcon} />}
-                  iconEnd={
-                    <Icon
-                      id='open-status'
-                      icon={
-                        canShowHiddenAccounts
-                          ? KeyboardArrowUpIcon
-                          : KeyboardArrowDownIcon
-                      }
-                    />
-                  }
-                >
-                  <ListItemButton
-                    aria-expanded={canShowHiddenAccounts}
-                    onClick={toggleHiddenAccounts}
-                    subtitle={
-                      <FormattedMessage
-                        id='collections.hidden_accounts_description'
-                        defaultMessage='You’ve blocked or muted {count, plural, one {this user} other {these users}}'
-                        values={{ count: hiddenAccounts.length }}
-                      />
-                    }
-                  >
-                    <FormattedMessage
-                      id='collections.hidden_accounts_link'
-                      defaultMessage='{count, plural, one {# hidden account} other {# hidden accounts}}'
-                      values={{ count: hiddenAccounts.length }}
-                    />
-                  </ListItemButton>
-                </ListItemWrapper>
-              </Article>
-            )}
-            {canShowHiddenAccounts &&
-              hiddenAccounts.map(({ id }, index) => (
-                <Article
-                  key={id}
-                  aria-posinset={initialListSize + index + 1}
-                  aria-setsize={initialListSize + hiddenAccounts.length}
-                >
-                  <AccountListItem
-                    accountId={id}
-                    withBorder={index !== hiddenAccounts.length - 1}
-                    renderButton={renderAccountItemButton}
-                  />
-                </Article>
-              ))}
-          </ItemList>
-        </SensitiveScreen>
-      )}
+              ),
+              subtitle: (
+                <FormattedMessage
+                  id='collections.hidden_accounts_description'
+                  defaultMessage='You’ve blocked or muted {count, plural, one {this user} other {these users}}'
+                  values={{ count: hiddenAccounts.length }}
+                />
+              ),
+            }}
+            renderListItem={renderListItem}
+          />
+        </ItemList>
+      </SensitiveScreen>
     </>
   );
 };
